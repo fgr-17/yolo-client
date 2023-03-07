@@ -17,7 +17,12 @@ docker exec -it yolo bash
 
 ## Usage
 
+Go to the python app folder and start the main.py directly. The app listens to the port specified in the code (4008 now)
 
+```bash
+cd /workspace/src
+./main.py
+```
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
