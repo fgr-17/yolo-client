@@ -1,0 +1,10 @@
+version: "3.3"
+
+services:
+  python-template:
+    build: ./
+    container_name: python-template
+    volumes:
+      - .:/workspace
+    stdin_open: true
+    tty: true
