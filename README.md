@@ -1,8 +1,8 @@
 # Python Template
 
-This is a python template, docker based repository to initialise and create a basic package-app-test module with some scripts to automate some stuff
+Yolo client prepared to receive frames and process the image, plot boxes, and generate a new frame.
 
-## Author: Federico G. Roux (rouxfederico@gmail.com)
+## Author: fede, peter
 
 ## Installation
 
@@ -12,11 +12,10 @@ Build and get inside the container executing:
 
 ```bash
 docker-compose up -d
-docker exec -it python-template bash
+docker exec -it yolo bash
 ```
 
 ## Usage
-
 
 
 
