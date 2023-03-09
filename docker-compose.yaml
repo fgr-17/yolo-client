@@ -1,10 +1,12 @@
 version: "3.3"
 
 services:
-  python-template:
+  yolo:
     build: ./
-    container_name: python-template
+    container_name: yolo
     volumes:
       - .:/workspace
     stdin_open: true
     tty: true
+    ports:
+     - 4008:4008
