@@ -28,8 +28,8 @@ from io import BytesIO
 
 
 
-HOST = "localhost"  # The server's hostname or IP address
-PORT = 4008  # The port used by the server
+HOST = "172.23.0.2"  # The server's hostname or IP address
+PORT = 4007  # The port used by the server
 
 class ObjectDetectionGstreamer:
     """
@@ -114,29 +114,27 @@ class ObjectDetectionGstreamer:
 
         first_frame = True
 
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            s.bind((HOST, PORT))
-            # s.connect((HOST, PORT))
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((HOST, PORT))
             print(f"Connected to port:", PORT)
 
             while True:
                 # start_time = time()
                 
                 #First Receive the frame number
-                # raw_frame = s.recv(4)
-                raw_frame = self.read_udp(s, 4)
+                raw_frame = s.recv(4)
+                #raw_frame = self.read_udp(s, 4)
 
                 frame = int.from_bytes(raw_frame, byteorder="little")
                 
                 #Second Receive the frame size
-                # raw_size = s.recv(4)
-                raw_size = self.read_udp(s, 4)
+                raw_size = s.recv(4)
+                #raw_size = self.read_udp(s, 4)
                 size = int.from_bytes(raw_size, byteorder="little") 
                 
                 #Third Receive the frame
-                # raw_img = s.recv(size)
-                raw_img = self.read_udp(s, size)
+                raw_img = s.recv(size)
+                #raw_img = self.read_udp(s, size)
                 assert raw_img
                 
                 print(f"Rcv Frame: {frame} - with lenght: {size}")
