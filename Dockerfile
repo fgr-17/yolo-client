@@ -8,7 +8,8 @@ COPY requirements.txt .
 RUN apt update -y && apt install -y ffmpeg \
 libsm6 \
 libxext6 \
-net-tools
+net-tools \
+iputils-ping
 
 RUN python -m pip install --upgrade pip && \
 pip install --default-timeout=100 -r requirements.txt
