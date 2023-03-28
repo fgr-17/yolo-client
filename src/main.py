@@ -28,7 +28,7 @@ from io import BytesIO
 
 
 
-HOST = "172.23.0.2"  # The server's hostname or IP address
+HOST = "172.22.0.3"  # The server's hostname or IP address
 PORT = 4007  # The port used by the server
 
 class ObjectDetectionGstreamer:
@@ -36,7 +36,7 @@ class ObjectDetectionGstreamer:
     Class implements Yolo5 model to make inferences on a youtube video using Opencv2.
     """
 
-    def __init__(self, url=None, port=None, out_file="Labeled_Video.avi"):
+    def __init__(self, url=None, port=None, out_file="Labeled_Video.mp4"):
         """ """
         self._port = port
         self._URL = url
@@ -113,36 +113,34 @@ class ObjectDetectionGstreamer:
         # assert player.isOpened()
 
         first_frame = True
+        last_frame = False
 
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((HOST, PORT))
             print(f"Connected to port:", PORT)
 
-            while True:
-                # start_time = time()
+            while True:             
                 
                 #First Receive the frame number
                 raw_frame = s.recv(4)
-                #raw_frame = self.read_udp(s, 4)
-
                 frame = int.from_bytes(raw_frame, byteorder="little")
+                if frame == 2949:
+                    last_frame = True
                 
                 #Second Receive the frame size
-                raw_size = s.recv(4)
-                #raw_size = self.read_udp(s, 4)
+                raw_size = s.recv(4)                
                 size = int.from_bytes(raw_size, byteorder="little") 
                 
                 #Third Receive the frame
-                raw_img = s.recv(size)
-                #raw_img = self.read_udp(s, size)
+                raw_img = s.recv(size)                
                 assert raw_img
                 
                 print(f"Rcv Frame: {frame} - with lenght: {size}")
-                time.sleep(0.1)
+                #time.sleep(0.1)
 
-                f = open (str(frame)+".jpg", "wb")
-                f.write(raw_img)
-                f.close()
+                #f = open (str(frame)+".jpg", "wb")
+                #f.write(raw_img)
+                #f.close()
 
                 # init video output
                 # file_jpgdata = BytesIO(raw_img)
@@ -160,11 +158,10 @@ class ObjectDetectionGstreamer:
                     x_shape = dt.shape[1]
                     y_shape = dt.shape[0]
 
-                    # print('=================================')
-                    # print(f'x: {x_shape} - y: {y_shape}')
-
-                    four_cc = cv2.VideoWriter_fourcc(*"MPEG")
+                    #four_cc = cv2.VideoWriter_fourcc(*"MPEG")
+                    four_cc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
                     out = cv2.VideoWriter(self.out_file, four_cc, 20, (x_shape, y_shape))
+                    first_frame = False
 
 
                 results = self.score_frame(dt)
@@ -173,9 +170,12 @@ class ObjectDetectionGstreamer:
                 # end_time = time()
                 # fps = 1/np.round(end_time - start_time, 3)
                 # print(f"Frames Per Second : {fps}")
-                
-                
-                    # out.write(frame)
+                                
+                out.write(frame)
+
+                if last_frame:
+                    out.release()
+                    break
 
 # Create a new object and execute.
 a = ObjectDetectionGstreamer(port=4000)
