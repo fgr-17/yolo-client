@@ -30,12 +30,7 @@ from common import remote_data
 
 import os
 
-<<<<<<< Updated upstream
 remote = remote_data("gst", os.environ['GST_YOLO_PORT'])
-=======
-HOST = "172.19.0.3"  # The server's hostname or IP address
-PORT = 4007  # The port used by the server
->>>>>>> Stashed changes
 
 class ObjectDetectionGstreamer:
     """
@@ -120,8 +115,8 @@ class ObjectDetectionGstreamer:
                 #First Receive the frame number
                 raw_frame = s.recv(4, socket.MSG_WAITALL)
                 frame = int.from_bytes(raw_frame, byteorder="little")
-                #if frame == 2949: #TODO improve detection of last frame
-                #    last_frame = True
+                if frame == 2949: #TODO improve detection of last frame
+                    last_frame = True
                 
                 #Second Receive the frame size
                 raw_size = s.recv(4, socket.MSG_WAITALL)                
