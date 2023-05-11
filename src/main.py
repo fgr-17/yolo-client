@@ -26,10 +26,11 @@ from PIL import Image
 
 from io import BytesIO
 
+from common import remote_data
 
+import os
 
-HOST = "localhost"  # The server's hostname or IP address
-PORT = 4008  # The port used by the server
+remote = remote_data("gst", os.environ['GST_YOLO_PORT'])
 
 class ObjectDetectionGstreamer:
     """
@@ -109,64 +110,51 @@ class ObjectDetectionGstreamer:
         and write the output into a new file.
         :return: void
         """
-        # player = self.get_video_from_pipeline()
-        # assert player.isOpened()
 
         first_frame = True
+        last_frame = False
 
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            s.bind((HOST, PORT))
-            # s.connect((HOST, PORT))
-            print(f"Connected to port:", PORT)
+        print(f'Connecting to {remote.ip}:{remote.port}')
 
-            while True:
-                # start_time = time()
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((remote.ip, remote.port))
+            print(f"Connected to port:", remote.port)
+
+            while True:             
                 
                 #First Receive the frame number
-                # raw_frame = s.recv(4)
-                raw_frame = self.read_udp(s, 4)
-
+                raw_frame = s.recv(4)
                 frame = int.from_bytes(raw_frame, byteorder="little")
+                if frame == 2949: #TODO improve detection of last frame
+                    last_frame = True
                 
                 #Second Receive the frame size
-                # raw_size = s.recv(4)
-                raw_size = self.read_udp(s, 4)
+                raw_size = s.recv(4)                
                 size = int.from_bytes(raw_size, byteorder="little") 
                 
                 #Third Receive the frame
-                # raw_img = s.recv(size)
-                raw_img = self.read_udp(s, size)
+                raw_img = s.recv(size)                
                 assert raw_img
                 
-                print(f"Rcv Frame: {frame} - with lenght: {size}")
-                time.sleep(0.1)
+                if (first_frame or last_frame):
+                    print(f"Rcv Frame: {frame} - with lenght: {size}")
 
-                f = open (str(frame)+".jpg", "wb")
-                f.write(raw_img)
-                f.close()
+                #f = open (str(frame)+".jpg", "wb")
+                #f.write(raw_img)
+                #f.close()
 
-                # init video output
-                # file_jpgdata = BytesIO(raw_img)
+                # init video output                
                 file_jpgdata = np.asarray(bytearray(raw_img), dtype="uint8")
-                # dt = Image.open(file_jpgdata)
-                # dt = cv2.imdecode(np.float32(raw_img), cv2.IMREAD_COLOR)
                 dt = cv2.imdecode(file_jpgdata, cv2.IMREAD_COLOR)
                 
                 if first_frame:
-                    # x_shape = dt.width
-                    # y_shape = dt.height
-
-                    # x_shape = int(dt.get(cv2.CAP_PROP_FRAME_WIDTH))
-                    # y_shape = int(dt.get(cv2.CAP_PROP_FRAME_HEIGHT))
                     x_shape = dt.shape[1]
                     y_shape = dt.shape[0]
 
-                    # print('=================================')
-                    # print(f'x: {x_shape} - y: {y_shape}')
-
-                    four_cc = cv2.VideoWriter_fourcc(*"MPEG")
+                    #four_cc = cv2.VideoWriter_fourcc(*"MPEG")
+                    four_cc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
                     out = cv2.VideoWriter(self.out_file, four_cc, 20, (x_shape, y_shape))
+                    first_frame = False
 
 
                 results = self.score_frame(dt)
@@ -175,9 +163,12 @@ class ObjectDetectionGstreamer:
                 # end_time = time()
                 # fps = 1/np.round(end_time - start_time, 3)
                 # print(f"Frames Per Second : {fps}")
-                
-                
-                    # out.write(frame)
+                                
+                out.write(frame)
+
+                if last_frame:
+                    out.release()
+                    break
 
 # Create a new object and execute.
 a = ObjectDetectionGstreamer(port=4000)

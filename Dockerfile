@@ -7,10 +7,12 @@ COPY requirements.txt .
 
 RUN apt update -y && apt install -y ffmpeg \
 libsm6 \
-libxext6
+libxext6 \
+net-tools \
+iputils-ping
 
 RUN python -m pip install --upgrade pip && \
-    pip install -r requirements.txt
+pip install --default-timeout=100 -r requirements.txt
 
 RUN printf "\nalias ls='ls --color=auto'\n" >> ~/.bashrc
 RUN printf "\nalias ll='ls -alF'\n" >> ~/.bashrc
