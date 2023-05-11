@@ -26,10 +26,9 @@ from PIL import Image
 
 from io import BytesIO
 
+from common import remote_data
 
-
-HOST = "172.22.0.5"  # The server's hostname or IP address
-PORT = 4007  # The port used by the server
+remote = remote_data("gst", 4007)
 
 class ObjectDetectionGstreamer:
     """
@@ -113,9 +112,11 @@ class ObjectDetectionGstreamer:
         first_frame = True
         last_frame = False
 
+        print(f'Connecting to {remote.ip}:{remote.port}')
+
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect((HOST, PORT))
-            print(f"Connected to port:", PORT)
+            s.connect((remote.ip, remote.port))
+            print(f"Connected to port:", remote.port)
 
             while True:             
                 
