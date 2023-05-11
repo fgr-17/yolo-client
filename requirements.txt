@@ -22,4 +22,3 @@ seaborn
 matplotlib
 gitpython
 setuptools
-requests

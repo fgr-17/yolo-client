@@ -28,7 +28,9 @@ from io import BytesIO
 
 from common import remote_data
 
-remote = remote_data("gst", 4007)
+import os
+
+remote = remote_data("gst", os.environ['GST_YOLO_PORT'])
 
 class ObjectDetectionGstreamer:
     """
