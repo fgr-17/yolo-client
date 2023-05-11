@@ -30,7 +30,12 @@ from common import remote_data
 
 import os
 
+<<<<<<< Updated upstream
 remote = remote_data("gst", os.environ['GST_YOLO_PORT'])
+=======
+HOST = "172.19.0.3"  # The server's hostname or IP address
+PORT = 4007  # The port used by the server
+>>>>>>> Stashed changes
 
 class ObjectDetectionGstreamer:
     """
@@ -94,16 +99,6 @@ class ObjectDetectionGstreamer:
 
         return frame
 
-    def read_udp(self, sock, l):
-        try:
-            data, addr = sock.recvfrom(l)
-        except socket.timeout as e:
-            return b'Error'
-        except Exception as e:
-            return b'Error'
-        else:
-            return data
-
     def __call__(self):
         """
         This function is called when class is executed, it runs the loop to read the video frame by frame,
@@ -123,17 +118,20 @@ class ObjectDetectionGstreamer:
             while True:             
                 
                 #First Receive the frame number
-                raw_frame = s.recv(4)
+                raw_frame = s.recv(4, socket.MSG_WAITALL)
                 frame = int.from_bytes(raw_frame, byteorder="little")
-                if frame == 2949: #TODO improve detection of last frame
-                    last_frame = True
+                #if frame == 2949: #TODO improve detection of last frame
+                #    last_frame = True
                 
                 #Second Receive the frame size
-                raw_size = s.recv(4)                
+                raw_size = s.recv(4, socket.MSG_WAITALL)                
                 size = int.from_bytes(raw_size, byteorder="little") 
                 
+                if (size == 0):
+                    print(f"size is 0")
+                
                 #Third Receive the frame
-                raw_img = s.recv(size)                
+                raw_img = s.recv(size, socket.MSG_WAITALL)                
                 assert raw_img
                 
                 if (first_frame or last_frame):
