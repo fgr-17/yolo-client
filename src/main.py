@@ -104,11 +104,11 @@ class ObjectDetectionGstreamer:
         first_frame = True
         last_frame = False
 
-        print(f'Connecting to {remote.ip}:{remote.port}')
+        print(f'Connecting to {self._URL}:{self._port}')
 
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect((remote.ip, remote.port))
-            print(f"Connected to port:", remote.port)
+            s.connect((self._URL, self._port))
+            print(f"Connected to port:", self._port)
 
             while True:             
                 
@@ -164,5 +164,5 @@ class ObjectDetectionGstreamer:
                     break
 
 # Create a new object and execute.
-a = ObjectDetectionGstreamer(port=4000)
+a = ObjectDetectionGstreamer(url=remote.get_ip(), port=remote.get_port())
 a()
