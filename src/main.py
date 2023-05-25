@@ -102,7 +102,6 @@ class ObjectDetectionGstreamer:
         """
 
         first_frame = True
-        prev_frame = 0
 
         print(f'Connecting to {self._URL}:{self._port}')
 
@@ -115,43 +114,47 @@ class ObjectDetectionGstreamer:
             while True:
                 try:
                     #1. First Receive the frame number
-                    raw_frame = s.recv(4, socket.MSG_WAITALL)
+                    raw_frame = s.recv(4)
                                        
                     if not raw_frame:
                         # No frame received, handle
                         print(f"Error: raw_frame is empty")
-                        break
+                        break #end
 
                     frame = int.from_bytes(raw_frame, byteorder="little")
-
-                    #Ignoring corrupted frames
-                    if(frame > prev_frame):
-                        continue
-                    prev_frame+=1
 
                     #2. Second Receive the frame size
                     raw_size = s.recv(4, socket.MSG_WAITALL)
                     if not raw_size:
                         # No size received, handle
                         print(f"Error: raw_size is empty")
-                        break
+                        break #end
 
                     size = int.from_bytes(raw_size, byteorder="little")
 
                     print(f"Rcv Frame: {frame} - with lenght: {size}")
 
                     if size == 0:
-                        print(f"Error: size is 0")
-                        break
+                        print(f"Error: Frame {frame} size is 0" )
+                        break #end
 
                     #3. Third Receive the frame
-                    raw_img = s.recv(size, socket.MSG_WAITALL)
-                    if not raw_img:
-                        # No frame received, handle
-                        print(f"Error: raw_img is empty")
-                        break
+                    raw_img = b""
+                    bytes_received = 0
+                    while bytes_received < size:
+                        chunk = s.recv(size - bytes_received, socket.MSG_WAITALL)
+                        if not chunk:
+                            # No more data received, handle it
+                            print(f"Error: chunk is empty")
+                            break
 
-                    assert raw_img                   
+                        raw_img += chunk
+                        bytes_received += len(chunk)
+
+                    if bytes_received < size:
+                        # The complete frame was not received, handle it
+                        print(f"Error: Incomplete raw_img received")
+                        break #end
 
                     #f = open (str(frame)+".jpg", "wb")
                     #f.write(raw_img)
@@ -182,11 +185,11 @@ class ObjectDetectionGstreamer:
                 except socket.timeout:
                     # Timeout occurred, handle it
                     print(f"Timeout occurred")
-                    break
+                    break #end
                 except socket.error as e:
                     # Handle other socket errors
                     print(f"Socket error occurred:", str(e))
-                    break
+                    break #end
 
             # Release video
             try:
