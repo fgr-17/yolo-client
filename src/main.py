@@ -102,66 +102,106 @@ class ObjectDetectionGstreamer:
         """
 
         first_frame = True
-        last_frame = False
 
         print(f'Connecting to {self._URL}:{self._port}')
 
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            timeout = 40 #seconds
+            s.settimeout(timeout)
             s.connect((self._URL, self._port))
             print(f"Connected to port:", self._port)
 
-            while True:             
-                
-                #First Receive the frame number
-                raw_frame = s.recv(4, socket.MSG_WAITALL)
-                frame = int.from_bytes(raw_frame, byteorder="little")
-                if frame == 2949: #TODO improve detection of last frame
-                    last_frame = True
-                
-                #Second Receive the frame size
-                raw_size = s.recv(4, socket.MSG_WAITALL)                
-                size = int.from_bytes(raw_size, byteorder="little") 
-                
-                if (size == 0):
-                    print(f"size is 0")
-                
-                #Third Receive the frame
-                raw_img = s.recv(size, socket.MSG_WAITALL)                
-                assert raw_img
-                
-                if (first_frame or last_frame):
+            while True:
+                try:
+                    #1. First Receive the frame number
+                    raw_frame = s.recv(4)
+                                       
+                    if not raw_frame:
+                        # No frame received, handle
+                        print(f"Error: raw_frame is empty")
+                        break #end
+
+                    frame = int.from_bytes(raw_frame, byteorder="little")
+
+                    #2. Second Receive the frame size
+                    raw_size = s.recv(4, socket.MSG_WAITALL)
+                    if not raw_size:
+                        # No size received, handle
+                        print(f"Error: raw_size is empty")
+                        break #end
+
+                    size = int.from_bytes(raw_size, byteorder="little")
+
                     print(f"Rcv Frame: {frame} - with lenght: {size}")
 
-                #f = open (str(frame)+".jpg", "wb")
-                #f.write(raw_img)
-                #f.close()
+                    if size == 0:
+                        print(f"Error: Frame {frame} size is 0" )
+                        break #end
 
-                # init video output                
-                file_jpgdata = np.asarray(bytearray(raw_img), dtype="uint8")
-                dt = cv2.imdecode(file_jpgdata, cv2.IMREAD_COLOR)
-                
-                if first_frame:
-                    x_shape = dt.shape[1]
-                    y_shape = dt.shape[0]
+                    #3. Third Receive the frame
+                    raw_img = b""
+                    bytes_received = 0
+                    while bytes_received < size:
+                        chunk = s.recv(size - bytes_received, socket.MSG_WAITALL)
+                        if not chunk:
+                            # No more data received, handle it
+                            print(f"Error: chunk is empty")
+                            break
 
-                    #four_cc = cv2.VideoWriter_fourcc(*"MPEG")
-                    four_cc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
-                    out = cv2.VideoWriter(self.out_file, four_cc, 20, (x_shape, y_shape))
-                    first_frame = False
+                        raw_img += chunk
+                        bytes_received += len(chunk)
 
+                    if bytes_received < size:
+                        # The complete frame was not received, handle it
+                        print(f"Error: Incomplete raw_img received")
+                        break #end
 
-                results = self.score_frame(dt)
-                frame = self.plot_boxes(results, dt)
-                
-                # end_time = time()
-                # fps = 1/np.round(end_time - start_time, 3)
-                # print(f"Frames Per Second : {fps}")
-                                
-                out.write(frame)
+                    #f = open (str(frame)+".jpg", "wb")
+                    #f.write(raw_img)
+                    #f.close()
 
-                if last_frame:
-                    out.release()
-                    break
+                    # init video output
+                    file_jpgdata = np.asarray(bytearray(raw_img), dtype="uint8")
+                    dt = cv2.imdecode(file_jpgdata, cv2.IMREAD_COLOR)
+
+                    if first_frame:
+                        x_shape = dt.shape[1]
+                        y_shape = dt.shape[0]
+
+                        #four_cc = cv2.VideoWriter_fourcc(*"MPEG")
+                        four_cc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+                        out = cv2.VideoWriter(self.out_file, four_cc, 20, (x_shape, y_shape))
+                        first_frame = False
+
+                    results = self.score_frame(dt)
+                    frame = self.plot_boxes(results, dt)
+                    
+                    # end_time = time()
+                    # fps = 1/np.round(end_time - start_time, 3)
+                    # print(f"Frames Per Second : {fps}")
+                                    
+                    out.write(frame)
+
+                except socket.timeout:
+                    # Timeout occurred, handle it
+                    print(f"Timeout occurred")
+                    break #end
+                except socket.error as e:
+                    # Handle other socket errors
+                    print(f"Socket error occurred:", str(e))
+                    break #end
+
+            # Release video
+            try:
+                out.release()
+                print(f"Output video released")
+            except NameError:
+                print(f"Output video not created")
+            
+            # Close socket
+            s.close()
+            print(f"Socket closed")
+            
 
 # Create a new object and execute.
 a = ObjectDetectionGstreamer(url=remote.get_ip(), port=remote.get_port())
